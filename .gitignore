@@ -1,0 +1,11 @@
+# keys
+.env
+
+# python
+__pycache__/
+
+# made when you run the code
+results/
+samples/threads.sqlite
+samples/batch_input.jsonl
+samples/batch_id.txt

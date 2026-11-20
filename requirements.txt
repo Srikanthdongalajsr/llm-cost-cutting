@@ -1,0 +1,12 @@
+groq
+openai
+anthropic
+python-dotenv
+requests
+sentence-transformers
+litellm
+langfuse>=5
+langchain>=1
+langchain-groq
+langgraph
+langgraph-checkpoint-sqlite
