@@ -1,67 +1,95 @@
-# LLM cost lab
+# LLM Cost Lab
 
-Small, runnable examples of cutting an LLM bill without breaking the answers.
-Everything uses one made-up store, Blipkart, and its customer-support agent.
+## Overview
 
-## Setup
+**LLM Cost Lab** provides a collection of small, runnable examples that demonstrate how to reduce the cost of Large Language Model (LLM) usage without sacrificing answer quality. All examples revolve around a fictional e‑commerce store, *Blipkart*, and a customer‑support agent built on top of various LLM providers.
+
+The repository contains:
+- Sample scripts showcasing techniques such as prompt caching, semantic caching, gateway routing, bounded agents, and batch API calls.
+- A `lab.py` script that runs the same support agent in multiple configurations on a set of test cases, reporting both cost and success metrics.
+- Utility data files and a shared system prompt.
+
+## Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/your-org/llm-cost-lab.git
+cd llm-cost-lab
+
+# Install Python dependencies
 pip install -r requirements.txt
-cp .env.example .env      # add the keys for the files you want to run
+
+# Set up environment variables (copy the example and add your keys)
+cp .env.example .env
+# Edit .env and add the API keys you need (Groq, OpenAI, OpenRouter, etc.)
 ```
 
-Most files only need a free [Groq](https://console.groq.com) key. Each file below says what it needs.
+> **Note:** Most examples work with a free Groq key. Specific scripts list any additional keys required.
 
-## The examples (`samples/`)
+## Usage Examples
 
-| File | What it shows | Keys |
-|---|---|---|
-| `01_prompt_caching.py` | The same request with a changing line at the top vs at the end of the prompt. Only the second one gets cached. | OpenAI (default), Groq or Anthropic |
-| `02_semantic_cache.py` | Reusing answers for questions that mean the same, with guards: never cache personal or money questions, exact match first, same prompt version, numbers must match. Uses the Jev decision model when keyword rules can't tell. | OpenRouter |
-| `03_gateway_router.py` | One gateway (LiteLLM) for every call. A decision model sends each message to: refuse, plain code, the small model or the big model, and checks the cheap answers. Every call is traced in Langfuse with its cost. | Groq, OpenRouter, Langfuse |
-| `04_bounded_agent.py` | An agent with limits: max model calls, max tool calls, old turns summarised, old tool results cleared. State is saved after every step, so a chat can resume. | Groq |
-| `05_batch_api.py` | The same job (tag 30 tickets) as 30 live calls, and as one batch: 50% off, done within 24 hours, for work nobody is waiting on. | OpenAI |
+All sample scripts live in the `samples/` directory. Below are common entry points:
 
 ```bash
 cd samples
-python 01_prompt_caching.py          # OpenAI
+
+# 1️⃣ Prompt caching demo (OpenAI by default)
+python 01_prompt_caching.py
+# Use a different provider
 python 01_prompt_caching.py groq
 python 01_prompt_caching.py claude
+
+# 2️⃣ Semantic cache demo (requires OpenRouter key)
 python 02_semantic_cache.py
+
+# 3️⃣ Gateway router demo (Groq, OpenRouter, Langfuse optional)
 python 03_gateway_router.py
-python 04_bounded_agent.py           # run it twice: the second run picks up the saved chat
+
+# 4️⃣ Bounded agent demo (state is persisted across runs)
+python 04_bounded_agent.py   # first run
+python 04_bounded_agent.py   # second run resumes the chat
+
+# 5️⃣ Batch API demo (run live calls or submit as a batch)
 python 05_batch_api.py live          # 30 normal calls
-python 05_batch_api.py submit        # the same 30 as one batch; saves the batch id to batch_id.txt
-python 05_batch_api.py check         # any time later, even after a restart: prints the tags and the cost
+python 05_batch_api.py submit        # same 30 calls as a single batch
+python 05_batch_api.py check         # later: show tags and total cost
 ```
 
-`support_prompt.md` is the system prompt the samples share (about 1,250 tokens, enough for providers to cache it).
+### Lab Execution
 
-## The lab (`lab.py`)
-
-The same support agent run five ways on the 12 test cases in `data/cases.jsonl`, to measure what each change does to the bill **and** to the pass rate. Needs Groq.
-
-| Run | What changes |
-|---|---|
-| `v0` | gpt-oss-120b, request ID and time at the **top** of the system prompt |
-| `stable` | that line moved to the **end** of the user message, so the start of the prompt never changes |
-| `routed` | stable, and a keyword router sends easy messages to gpt-oss-20b |
-| `trimmed` | routed, with low reasoning effort and fewer order fields sent to the model |
-| `small` | stable, gpt-oss-20b for everything |
+The `lab.py` script runs the support agent in five different configurations over the 12 test cases in `data/cases.jsonl` and produces a cost / success report.
 
 ```bash
-python lab.py v0              # also: stable, routed, trimmed, small
-python lab.py v0 2            # a second repeat; the report averages repeats
-python lab.py report          # one table from everything in results/
+python lab.py v0       # baseline configuration
+python lab.py stable   # prompt line moved to end of user message
+python lab.py routed   # keyword router sends easy messages to a smaller model
+python lab.py trimmed  # trimmed payload & reduced reasoning effort
+python lab.py small    # everything on the smaller model
+
+# Run a repeat for averaging
+python lab.py v0 2
+
+# Generate a consolidated report from all results
+python lab.py report
 ```
-Cheapest per chat isn't cheapest per success: `trimmed` cut thinking tokens by 80% and broke refunds. 12 cases is a lab, not a verdict, so re-run it on your own agent.
 
-Prices used: gpt-oss-120b $0.15 / $0.60 and gpt-oss-20b $0.075 / $0.30 per million input / output tokens on Groq, cached input 50% off, ₹94.09 per $ (13 Nov 2026).
+## Contributing
 
-## One more
+Contributions are welcome! Follow these steps:
 
-```bash
-python semantic_cache.py      # a cache with no guards: hits the wrong order, misses real paraphrases (no key)
-```
+1. **Fork** the repository.
+2. **Create a branch** for your change, e.g. `git checkout -b feature/my-feature`.
+3. **Make your changes** and ensure they pass any existing tests (if applicable).
+4. **Run the samples** to verify that nothing broke.
+5. **Commit** with a clear message and **push** to your fork.
+6. Open a **Pull Request** against the `master` branch of this repository.
 
-Runs write their numbers to `results/`.
+Please adhere to the existing code style (PEP 8) and add or update documentation as needed.
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file for full details.
+
+---
+
+*Happy hacking and may your LLM bills stay low!*
