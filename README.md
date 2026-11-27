@@ -1,5 +1,7 @@
 # LLM cost lab
 
+[Contributing Guidelines](CONTRIBUTING.md)
+
 Small, runnable examples of cutting an LLM bill without breaking the answers.
 Everything uses one made-up store, Blipkart, and its customer-support agent.
 
